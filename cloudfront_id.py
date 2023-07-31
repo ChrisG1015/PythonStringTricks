@@ -1,6 +1,15 @@
 import boto3
 import pandas as pd
 
+def remove_cloudfront_description(input_string):
+    target_pattern = "Cloudfront for "
+    if input_string.startswith(target_pattern):
+        start_index = len(target_pattern)
+        end_index = input_string.find(" livestreaming")
+        if end_index != -1:
+            return input_string[start_index:end_index]
+    return input_string
+
 def get_cloudfront_data(profile_name):
     # Use the provided AWS profile for authentication
     session = boto3.Session(profile_name=profile_name)
