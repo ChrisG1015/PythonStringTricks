@@ -1,6 +1,41 @@
 import argparse
 import boto3
 
+
+def get_cloudfront_origin_groups(distribution_id, profile_name):
+    # Create a Boto3 CloudFront client
+    session = boto3.Session(profile_name=profile_name)
+    client = session.client('cloudfront')
+
+    try:
+        # Get the current distribution configuration
+        response = client.get_distribution(Id=distribution_id)
+        distribution_config = response['Distribution']['DistributionConfig']
+
+        # Check if the distribution has origin groups
+        if 'OriginGroups' in distribution_config and 'Items' in distribution_config['OriginGroups']:
+            origin_groups = distribution_config['OriginGroups']['Items']
+
+            primary_origin_group_id = distribution_config.get('OriginGroups').get('Items')[0].get('Id')
+            primary_origin_group = next(group['FailoverCriteria'].get('StatusCodes').get('Items') for group in origin_groups if group['Id'] == primary_origin_group_id)[0]
+
+            result = {
+                'ORIGIN GROUPS': origin_groups,
+                'PRIMARY ORIGIN GROUP': primary_origin_group
+            }
+
+            return result
+
+        # Return an empty dictionary if no origin groups are found
+        return {}
+
+    except boto3.client('cloudfront').exceptions.NoSuchDistribution:
+        print(f"CloudFront distribution with ID '{distribution_id}' not found.")
+        return {}
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return {}
+
 def get_cloudfront_distribution(distribution_id, profile_name):
     session = boto3.Session(profile_name=profile_name)
     client = session.client('cloudfront')
