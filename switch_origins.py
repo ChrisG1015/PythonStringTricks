@@ -15,6 +15,47 @@ def get_cloudfront_distribution(distribution_id, profile_name):
         return None
 
 
+def set_cloudfront_primary_origin(distribution_id, new_domain_name, profile_name):
+    # Create a Boto3 CloudFront client
+    session = boto3.Session(profile_name=profile_name)
+    client = session.client('cloudfront')
+
+    try:
+        # Get the current distribution configuration
+        response = client.get_distribution(Id=distribution_id)
+        distribution_config = response['Distribution']['DistributionConfig']
+
+        # Check if the distribution has origins and retrieve their configurations
+        if 'Origins' in distribution_config and 'Items' in distribution_config['Origins']:
+            origins = distribution_config['Origins']['Items']
+
+            # Find the primary origin and update its domain name
+            for origin in origins:
+                if 'CustomOriginConfig' in origin:
+                    primary_origin_path = origin['CustomOriginConfig'].get('OriginPath', '')
+                else:
+                    primary_origin_path = ''
+
+                origin['DomainName'] = new_domain_name
+                origin['OriginPath'] = primary_origin_path
+
+            # Update the distribution configuration with the modified origin information
+            client.update_distribution(
+                Id=distribution_id,
+                DistributionConfig=distribution_config,
+                IfMatch=response['ETag']
+            )
+
+            print(f"Primary origin for CloudFront distribution '{distribution_id}' set to '{new_domain_name}' successfully.")
+        else:
+            print(f"No origin found for CloudFront distribution '{distribution_id}'.")
+
+    except boto3.client('cloudfront').exceptions.NoSuchDistribution:
+        print(f"CloudFront distribution with ID '{distribution_id}' not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
 def get_cloudfront_origin_domains(distribution_id, profile_name):
     # Create a Boto3 CloudFront client
     session = boto3.Session(profile_name=profile_name)
