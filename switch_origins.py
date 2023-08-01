@@ -13,6 +13,34 @@ def get_cloudfront_distribution(distribution_id, profile_name):
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
+
+
+def get_cloudfront_origin_domains(distribution_id, profile_name):
+    # Create a Boto3 CloudFront client
+    session = boto3.Session(profile_name=profile_name)
+    client = session.client('cloudfront')
+
+    try:
+        # Get the distribution configuration
+        response = client.get_distribution(Id=distribution_id)
+        distribution_config = response['Distribution']['DistributionConfig']
+
+        # Check if the distribution has origins and retrieve their domain names
+        if 'Origins' in distribution_config and 'Items' in distribution_config['Origins']:
+            origin_domains = [origin['DomainName'] for origin in distribution_config['Origins']['Items']]
+            return origin_domains
+
+        # Return an empty list if no origins are found
+        return []
+
+    except client.exceptions.NoSuchDistribution:
+        print(f"CloudFront distribution with ID '{distribution_id}' not found.")
+        return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
+
 def get_cloudfront_primary_origin(distribution_id, profile_name):
     # Create a Boto3 CloudFront client
     session = boto3.Session(profile_name=profile_name)
