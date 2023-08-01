@@ -1,6 +1,63 @@
 import argparse
 import boto3
 
+def switch_cloudfront_primary_origin(distribution_id, aws_profile_name, origins):
+    # Create a Boto3 CloudFront client
+    session = boto3.Session(profile_name=aws_profile_name)
+    client = session.client('cloudfront')
+
+    try:
+        # Get the current distribution configuration
+        response = client.get_distribution(Id=distribution_id)
+        distribution_config = response['Distribution']['DistributionConfig']
+
+        # Check if the distribution has origins
+        if 'Origins' in distribution_config and 'Items' in distribution_config['Origins']:
+            origin_ids = [origin['Id'] for origin in distribution_config['Origins']['Items']]
+
+            # Find the primary origin group ID from the given origin dictionary
+            primary_origin_group_id = origins.get('PRIMARY ORIGIN GROUP', None)
+
+            # Check if the primary origin group ID is found and is one of the origin IDs
+            if primary_origin_group_id in origin_ids:
+                # Set the new primary origin group
+                distribution_config['OriginGroups']['Items'][0]['Id'] = primary_origin_group_id
+
+                # Update the distribution configuration with the modified origin group
+                client.update_distribution(
+                    Id=distribution_id,
+                    DistributionConfig=distribution_config,
+                    IfMatch=response['ETag']
+                )
+
+                print("Primary origin switched successfully.")
+            else:
+                print("Primary origin group ID not found in the distribution's origin IDs.")
+
+        else:
+            print(f"Origins not found for CloudFront distribution '{distribution_id}'.")
+
+    except boto3.client('cloudfront').exceptions.NoSuchDistribution:
+        print(f"CloudFront distribution with ID '{distribution_id}' not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    # Replace 'your_distribution_id' with the actual ID of your CloudFront distribution
+    distribution_id = 'your_distribution_id'
+    # Replace 'your_aws_profile_name' with the AWS profile name from ~/.aws/credentials
+    aws_profile_name = 'your_aws_profile_name'
+
+    # Replace the values in the 'origins' dictionary with actual origin group IDs
+    origins = {
+        'ORIGIN GROUPS': ["origin_group_id_1", "origin_group_id_2", "origin_group_id_3"],
+        'PRIMARY ORIGIN GROUP': "origin_group_id_1",
+        'SECONDARY ORIGIN GROUP': "origin_group_id_2"
+    }
+
+    switch_cloudfront_primary_origin(distribution_id, aws_profile_name, origins)
+
+
 
 
 def switch_cloudfront_primary_origin(distribution_id, aws_profile_name, origins):
