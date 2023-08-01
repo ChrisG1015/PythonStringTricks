@@ -17,7 +17,7 @@ def get_cloudfront_origin_groups(distribution_id, profile_name):
             origin_groups = distribution_config['OriginGroups']['Items']
 
             primary_origin_group_id = distribution_config.get('OriginGroups').get('Items')[0].get('Id')
-            primary_origin_group = next(group['FailoverCriteria'].get('StatusCodes').get('Items') for group in origin_groups if group['Id'] == primary_origin_group_id)[0]
+            primary_origin_group = next(group for group in origin_groups if group['Id'] == primary_origin_group_id)
 
             result = {
                 'ORIGIN GROUPS': origin_groups,
