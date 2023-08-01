@@ -14,64 +14,51 @@ def get_cloudfront_distribution(distribution_id, profile_name):
         print(f"An error occurred: {e}")
         return None
 
-def switch_primary_origin(distribution, profile_name):
+def switch_primary_origin(distribution, profile_name, new_flag):
     if 'Origins' in distribution and 'Items' in distribution['Origins']:
-        origins = distribution['Origins']['Items']
-        if len(origins) == 2:
-            primary_origin_id = distribution['Origins']['Items'][0]['Id']
-            new_primary_origin_id = distribution['Origins']['Items'][1]['Id']
+        primary_origin = distribution['Origins']['Items'][0]
 
-            if 'CustomOriginConfig' in distribution['Origins']['Items'][0]:
-                primary_origin_path = distribution['Origins']['Items'][0]['CustomOriginConfig'].get('OriginPath', '')
-            else:
-                primary_origin_path = ''
+        # Get the current primary origin domain name
+        current_domain_name = primary_origin['DomainName']
 
-            session = boto3.Session(profile_name=profile_name)
-            client = session.client('cloudfront')
+        if new_flag not in current_domain_name:
+            new_domain_name = current_domain_name.replace("east", "west") if "east" in current_domain_name else current_domain_name.replace("west", "east")
 
             try:
+                session = boto3.Session(profile_name=profile_name)
+                client = session.client('cloudfront')
+
+                # Update the primary origin domain name
+                primary_origin['DomainName'] = new_domain_name
+
+                # Set the updated primary origin
                 client.update_distribution(
                     Id=distribution['Id'],
                     DistributionConfig=distribution['DistributionConfig'],
-                    IfMatch=distribution['ETag'],
-                    DefaultRootObject=distribution['DefaultRootObject'],
-                    Origins={
-                        'Quantity': 2,
-                        'Items': [
-                            {
-                                'Id': new_primary_origin_id,
-                                'DomainName': distribution['Origins']['Items'][1]['DomainName'],
-                                'OriginPath': '',
-                                'CustomHeaders': distribution['Origins']['Items'][1]['CustomHeaders'],
-                                'CustomOriginConfig': distribution['Origins']['Items'][1]['CustomOriginConfig']
-                            },
-                            {
-                                'Id': primary_origin_id,
-                                'DomainName': distribution['Origins']['Items'][0]['DomainName'],
-                                'OriginPath': primary_origin_path,
-                                'CustomHeaders': distribution['Origins']['Items'][0]['CustomHeaders'],
-                                'CustomOriginConfig': distribution['Origins']['Items'][0]['CustomOriginConfig']
-                            }
-                        ]
-                    }
+                    IfMatch=distribution['ETag']
                 )
-                print("Primary origin switched successfully.")
+
+                print(f"Primary origin switched successfully for distribution '{distribution['Id']}'.")
             except Exception as e:
-                print(f"An error occurred while switching primary origin: {e}")
+                print(f"An error occurred while switching primary origin for distribution '{distribution['Id']}': {e}")
         else:
-            print("The CloudFront distribution does not have exactly two origins.")
+            print(f"Primary origin already contains '{new_flag}' in the domain name for distribution '{distribution['Id']}'.")
+
     else:
-        print("The CloudFront distribution does not have any origins or has an invalid format.")
+        print(f"Invalid CloudFront distribution format for distribution '{distribution['Id']}'.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Switch the primary origin for a CloudFront distribution.")
-    parser.add_argument("distribution_id", type=str, help="The ID of the CloudFront distribution.")
-    parser.add_argument("aws_profile", type=str, help="The AWS profile name from ~/.aws/credentials.")
+    parser = argparse.ArgumentParser(description="Switch the primary origin for CloudFront distributions.")
+    parser.add_argument("flag", choices=["west", "east"], help="The flag to check in the domain name.")
+    parser.add_argument("distribution_ids", nargs="+", type=str, help="List of CloudFront distribution IDs.")
+    parser.add_argument("--aws_profile", type=str, default="default", help="The AWS profile name from ~/.aws/credentials. (default: 'default')")
     args = parser.parse_args()
 
-    distribution_id = args.distribution_id
+    new_flag = args.flag
     aws_profile_name = args.aws_profile
+    distribution_ids = args.distribution_ids
 
-    distribution = get_cloudfront_distribution(distribution_id, aws_profile_name)
-    if distribution:
-        switch_primary_origin(distribution, aws_profile_name)
+    for distribution_id in distribution_ids:
+        distribution = get_cloudfront_distribution(distribution_id, aws_profile_name)
+        if distribution:
+            switch_primary_origin(distribution, aws_profile_name, new_flag)
