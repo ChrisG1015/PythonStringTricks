@@ -15,6 +15,22 @@ def get_cloudfront_distribution(distribution_id, profile_name):
         return None
 
 
+def get_cloudfront_origin_domains(distribution_id, profile_name):
+    # Create a Boto3 CloudFront client
+    session = boto3.Session(profile_name=profile_name)
+    client = session.client('cloudfront')
+
+    try:
+        # Get the current distribution configuration
+        response = client.get_distribution(Id=distribution_id)
+        distribution_config = response['Distribution']['DistributionConfig']
+
+        # Check if the distribution has origins and retrieve their domain names
+        if 'Origins' in distribution_config and 'Items' in distribution_config['Origins']:
+            origin_domains = [origin['DomainName'] for origin in distribution_config['Origins']['Items']]
+            return origin_domains
+
+
 def set_cloudfront_primary_origin(distribution_id, new_domain_name, profile_name):
     # Create a Boto3 CloudFront client
     session = boto3.Session(profile_name=profile_name)
