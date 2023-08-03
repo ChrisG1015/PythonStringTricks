@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CloudFormation template for a CloudFront distribution with four cache behaviors.
+
+Resources:
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: YourOriginDomainName
+            Id: YourOriginId
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        Enabled: 'true'
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          TargetOriginId: YourOriginId
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: redirect-to-https
+        CacheBehaviors:
+          - PathPattern: /images/*
+            TargetOriginId: YourOriginId
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: allow-all
+            TrustedSigners:
+              - self
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+          - PathPattern: /videos/*
+            TargetOriginId: YourOriginId
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: redirect-to-https
+            TrustedSigners:
+              - self
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+          - PathPattern: /api/*
+            TargetOriginId: YourOriginId
+            ForwardedValues:
+              QueryString: 'true'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: allow-all
+            TrustedSigners:
+              - self
+            AllowedMethods:
+              - GET
+              - POST
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+          - PathPattern: /static/*
+            TargetOriginId: YourOriginId
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: redirect-to-https
+            TrustedSigners:
+              - self
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
