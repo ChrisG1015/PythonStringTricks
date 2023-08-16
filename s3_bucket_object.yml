@@ -1,0 +1,21 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "MyS3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "my-unique-bucket-name"
+      }
+    },
+    "MyS3Object": {
+      "Type": "AWS::S3::Object",
+      "Properties": {
+        "Bucket": { "Ref": "MyS3Bucket" },
+        "Key": "path/to/my-object.zip",
+        "Source": {
+          "Fn::Sub": "s3://${MyS3Bucket}/path/to/local-object.zip"
+        }
+      }
+    }
+  }
+}
