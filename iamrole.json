@@ -1,0 +1,68 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "CloudFormation template for connecting a MediaLive Metric Stream to a Kinesis Data Firehose and Lambda function to Splunk.",
+  "Resources": {
+    "MetricStreamRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "MetricStreamRole",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudwatch.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "CloudWatchToMetricStreamPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudwatch:PutMetricStream"
+                    /* Add any other necessary permissions here */
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "CloudWatchMetricStream": {
+      "Type": "AWS::CloudWatch::MetricStream",
+      "Properties": {
+        "Name": "MyMetricStream",
+        "RoleArn": {
+          "Fn::GetAtt": ["MetricStreamRole", "Arn"]
+        },
+        "FirehoseArn": {
+          "Fn::GetAtt": ["KinesisFirehose", "Arn"]
+        },
+        "IncludeFilters": [
+          {
+            "Name": "Namespace",
+            "Value": "AWS/MediaLive"
+          },
+          {
+            "Name": "MetricName",
+            "Value": "YOUR_METRIC_NAME"
+          }
+        ]
+      }
+    },
+    // ... (rest of your template)
+  },
+  "Outputs": {
+    // ... (rest of your outputs)
+  }
+}
