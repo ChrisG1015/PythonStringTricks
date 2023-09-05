@@ -1,0 +1,61 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "CloudFormation template for connecting a MediaLive Metric Stream to a Kinesis Data Firehose and Lambda function to Splunk.",
+  "Resources": {
+    "CloudWatchMetricStream": {
+      "Type": "AWS::CloudWatch::MetricStream",
+      "Properties": {
+        "Name": "MyMetricStream",
+        "RoleArn": "YOUR_METRIC_STREAM_ROLE_ARN",
+        "FirehoseArn": {
+          "Fn::GetAtt": ["KinesisFirehose", "Arn"]
+        },
+        "IncludeFilters": [
+          {
+            "Name": "Namespace",
+            "Value": "AWS/MediaLive"
+          },
+          {
+            "Name": "MetricName",
+            "Value": "YOUR_METRIC_NAME"
+          }
+        ]
+      }
+    },
+    "KinesisFirehose": {
+      "Type": "AWS::KinesisFirehose::DeliveryStream",
+      "Properties": {
+        "DeliveryStreamType": "DirectPut",
+        "S3DestinationConfiguration": {
+          "BucketARN": "YOUR_S3_BUCKET_ARN",
+          "RoleARN": "YOUR_FIREHOSE_ROLE_ARN"
+        }
+      }
+    },
+    "FirehoseToLambdaPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": "YOUR_LAMBDA_FUNCTION_NAME",
+        "Principal": "firehose.amazonaws.com",
+        "SourceAccount": {
+          "Fn::Sub": "${AWS::AccountId}"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "CloudWatchMetricStream": {
+      "Description": "CloudWatch Metric Stream",
+      "Value": {
+        "Ref": "CloudWatchMetricStream"
+      }
+    },
+    "KinesisFirehose": {
+      "Description": "Kinesis Data Firehose Delivery Stream",
+      "Value": {
+        "Ref": "KinesisFirehose"
+      }
+    }
+  }
+}
