@@ -1,0 +1,10 @@
+{
+  "EventSource": "cloudfront.amazonaws.com",
+  "EventName": ["UpdateDistribution", "CreateDistributionWithOrigin"],
+  "Resources": [
+    "arn:aws:cloudfront::account-id:distribution/*"
+  ],
+  "EventName": "UpdateDistribution",
+  "EventName": "CreateDistributionWithOrigin",
+  "EventName": "CreateDistribution"
+}
