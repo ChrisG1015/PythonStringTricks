@@ -5,3 +5,6 @@ aws lambda list-layers --query "Layers[?LayerName=='YourLayerName'].LayerArn" --
           { "Fn::ImportValue": { "Fn::Sub": "${LayerArnParameter}" } }
         ]
 
+
+aws events put-rule --name "UpdateDistributionRule" --event-pattern "{\"source\": [\"aws.cloudtrail\"], \"detail\":{\"eventName\":[\"UpdateDistribution\"]}}"
+
