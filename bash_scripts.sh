@@ -27,3 +27,38 @@ for group in response['SecurityGroups']:
         if tag.get('Key') == tag_key:
             print(f"Security Group ID: {group['GroupId']}")
             print(f"Tag Key: {tag_key}, Value: {tag['Value']}\n")
+
+
+import boto3
+
+def update_security_group_rules(security_group_id):
+    # Initialize a Boto3 EC2 client
+    ec2_client = boto3.client('ec2')
+
+    # Describe the current inbound rules of the security group
+    response = ec2_client.describe_security_groups(GroupIds=[security_group_id])
+    current_rules = response['SecurityGroups'][0]['IpPermissions']
+
+    # Iterate through the current rules and revoke any rule with 0.0.0.0/0 as the source
+    for rule in current_rules:
+        if any(entry['CidrIp'] == '0.0.0.0/0' for entry in rule.get('IpRanges', [])):
+            # Revoke the rule
+            ec2_client.revoke_security_group_ingress(
+                GroupId=security_group_id,
+                IpPermissions=[{
+                    'IpProtocol': rule['IpProtocol'],
+                    'FromPort': rule.get('FromPort', 0),
+                    'ToPort': rule.get('ToPort', 0),
+                    'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
+                }]
+            )
+            print(f"Revoked rule: {rule}")
+
+    print("Security group rules updated successfully.")
+
+# Replace 'your-security-group-id' with the actual security group ID
+security_group_id = 'your-security-group-id'
+
+# Call the function to update security group rules
+update_security_group_rules(security_group_id)
+
