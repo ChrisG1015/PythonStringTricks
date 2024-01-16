@@ -41,3 +41,12 @@ provisioner "local-exec" {
       done
     EOT
   }
+
+
+resource "null_resource" "run_python_script" {
+  depends_on = [aws_s3_bucket.example_bucket]
+
+  provisioner "local-exec" {
+    command = "python3 path/to/your/script.py"
+  }
+}
