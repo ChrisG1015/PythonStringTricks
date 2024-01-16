@@ -32,3 +32,12 @@ resource "aws_security_group" "cyberdynamic" {
     EOT
   }
 }
+
+
+provisioner "local-exec" {
+    command = <<-EOT
+      for port in "${join(" ", values(var.cyberdynamic_ports))}"; do
+        sed -i "s/\(${port}-cyberdynamic-api:.*ports: ${port}.*\)sec_group_id: /\\1sec_group_id: ${aws_security_group.cyberdynamic.id}/" your_yaml_file.yaml
+      done
+    EOT
+  }
