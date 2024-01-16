@@ -25,20 +25,10 @@ resource "aws_security_group" "cyberdynamic" {
     }
   }
 
- resource "null_resource" "update_yaml" {
-  triggers = {
-    security_group_id = aws_security_group.cyberdynamic.id
-  }
-
   provisioner "local-exec" {
     command = <<-EOT
-      echo "https:-cyberdynamic-api:" >> your_yaml_file.yaml
-      echo "  ports: ${var.cyberdynamic_ports["https"]}" >> your_yaml_file.yaml
-      echo "  sec_group_id: ${aws_security_group.cyberdynamic.id}" >> your_yaml_file.yaml
-
-      echo "rdp-cyberdynamic-api:" >> your_yaml_file.yaml
-      echo "  ports: ${var.cyberdynamic_ports["rdp"]}" >> your_yaml_file.yaml
-      echo "  sec_group_id: ${aws_security_group.cyberdynamic.id}" >> your_yaml_file.yaml
+      sed -i 's/\(https:-cyberdynamic-api:.*ports: 443.*\)sec_group_id: /\\1sec_group_id: ${aws_security_group.cyberdynamic.id}/' your_yaml_file.yaml
+      sed -i 's/\(rdp-cyberdynamic-api:.*ports: 3389.*\)sec_group_id: /\\1sec_group_id: ${aws_security_group.cyberdynamic.id}/' your_yaml_file.yaml
     EOT
   }
 }
