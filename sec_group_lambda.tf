@@ -25,6 +25,11 @@ resource "aws_security_group" "cyberdynamic" {
     }
   }
 
+ resource "null_resource" "update_yaml" {
+  triggers = {
+    security_group_id = aws_security_group.cyberdynamic.id
+  }
+
   provisioner "local-exec" {
     command = <<-EOT
       echo "https:-cyberdynamic-api:" >> your_yaml_file.yaml
