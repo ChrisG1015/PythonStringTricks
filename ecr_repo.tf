@@ -43,3 +43,15 @@ aws ecr get-login-password --region your-aws-region | docker login --username AW
 
 # Push Docker image to ECR
 docker push $ecr_repo_url
+
+
+#!/bin/bash
+
+# Extract the Python version constraint from pyproject.toml
+version_constraint=$(awk -F'"' '/^python/ {print $2}' pyproject.toml)
+
+# Use the version constraint in your script
+echo "Python version constraint: $version_constraint"
+
+# Add your logic here...
+
