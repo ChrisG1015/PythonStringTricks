@@ -110,4 +110,34 @@ def main():
         # Find the newest audio file
         audio_file_path = max(
             [os.path.join(audio_dir, f) for f in audio_files],
-            key=os.path.getct
+            key=os.path.getctime,
+        )
+
+        logging.info(f"Newest audio file: {audio_file_path}")
+
+        # Transcribe the audio file
+        transcript_text = transcribe_audio(audio_file_path)
+
+        # Display the transcript
+        st.header("Transcript")
+        st.write(transcript_text)
+
+        # Save the transcript to a text file
+        with open("transcript.txt", "w") as f:
+            f.write(transcript_text)
+            logging.info(f"Transcript saved to transcript.txt")
+
+        # Provide a download button for the transcript
+        st.download_button("Download Transcript", transcript_text)
+        logging.info(f"Transcript available for download")
+    else:
+        st.warning("Please record or upload an audio file before transcribing.")
+        logging.warning("No audio bytes found to transcribe.")
+
+if __name__ == "__main__":
+    # Set up the working directory
+    working_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.append(working_dir)
+
+    # Run the main function
+    main()
