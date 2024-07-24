@@ -33,6 +33,7 @@ def save_audio_file(audio_bytes, file_extension):
     with open(file_name, "wb") as f:
         f.write(audio_bytes)
 
+    logging.info(f"Audio saved to {file_name}")
     return file_name
 
 def transcribe_audio(file_path):
@@ -71,8 +72,6 @@ def main():
 
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
-    audio_bytes = None
-
     # Record Audio tab
     with tab1:
         audio_bytes = audio_recorder()
@@ -97,38 +96,18 @@ def main():
         # Ensure the audio directory exists and contains files
         if not os.path.exists(audio_dir):
             st.error("Audio directory does not exist.")
+            logging.error("Audio directory does not exist.")
             return
 
         audio_files = [f for f in os.listdir(audio_dir) if os.path.isfile(os.path.join(audio_dir, f)) and f.startswith("audio")]
         if not audio_files:
             st.error("No audio files found in the directory.")
+            logging.error("No audio files found in the directory.")
             return
 
+        logging.info(f"Audio files found: {audio_files}")
+
         # Find the newest audio file
-        audio_file_path = max(audio_files, key=lambda x: os.path.getctime(os.path.join(audio_dir, x)))
-
-        # Transcribe the audio file
-        transcript_text = transcribe_audio(os.path.join(audio_dir, audio_file_path))
-
-        # Display the transcript
-        st.header("Transcript")
-        st.write(transcript_text)
-
-        # Save the transcript to a text file
-        with open("transcript.txt", "w") as f:
-            f.write(transcript_text)
-            logging.info(f"Transcript saved to transcript.txt")
-
-        # Provide a download button for the transcript
-        st.download_button("Download Transcript", transcript_text)
-        logging.info(f"Transcript available for download")
-    elif not audio_bytes:
-        st.warning("Please record or upload an audio file before transcribing.")
-
-if __name__ == "__main__":
-    # Set up the working directory
-    working_dir = os.path.dirname(os.path.abspath(__file__))
-    sys.path.append(working_dir)
-
-    # Run the main function
-    main()
+        audio_file_path = max(
+            [os.path.join(audio_dir, f) for f in audio_files],
+            key=os.path.getct
