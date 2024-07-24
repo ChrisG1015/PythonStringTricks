@@ -23,7 +23,7 @@ def transcribe_audio(audio_bytes):
     Transcribe the audio bytes.
 
     :param audio_bytes: The audio data in bytes
-    :return: The transcribed text
+    :return: The transcribed text and the response object
     """
     files = {'file': audio_bytes}
     try:
@@ -41,13 +41,13 @@ def transcribe_audio(audio_bytes):
             st.write(f"Response Content: {response.content}")
 
             transcript = response.json()
-            return transcript["text"]
+            return transcript["text"], response
     except requests.exceptions.RequestException as e:
         # Log the error and response content for debugging
         st.error(f"An error occurred: {e}")
         if response is not None:
             st.error(f"Response content: {response.text}")
-        return "An error occurred during transcription."
+        return "An error occurred during transcription.", None
 
 def main():
     """
@@ -58,6 +58,7 @@ def main():
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
     audio_bytes = None
+    response = None
 
     # Record Audio tab
     with tab1:
@@ -81,7 +82,7 @@ def main():
         audio_file.name = "audio.wav"
 
         # Transcribe the audio file
-        transcript_text = transcribe_audio(audio_file)
+        transcript_text, response = transcribe_audio(audio_file)
 
         # Display the transcript
         st.header("Transcript")
@@ -97,14 +98,15 @@ def main():
         st.warning("Please record or upload an audio file before transcribing.")
 
     # Display connection logs in an expandable box
-    with st.expander("Connection Logs and Response Details"):
-        st.write(f"Request URL: {response.url}")
-        st.write(f"Request Headers: {response.request.headers}")
-        st.write(f"Request Body: {response.request.body}")
-        
-        st.write(f"Response Status Code: {response.status_code}")
-        st.write(f"Response Headers: {response.headers}")
-        st.write(f"Response Content: {response.content}")
+    if response:
+        with st.expander("Connection Logs and Response Details"):
+            st.write(f"Request URL: {response.url}")
+            st.write(f"Request Headers: {response.request.headers}")
+            st.write(f"Request Body: {response.request.body}")
+            
+            st.write(f"Response Status Code: {response.status_code}")
+            st.write(f"Response Headers: {response.headers}")
+            st.write(f"Response Content: {response.content}")
 
 if __name__ == "__main__":
     # Set up the working directory
