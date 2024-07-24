@@ -36,6 +36,7 @@ def save_audio_file(audio_bytes, file_extension):
     with open(file_name, "wb") as f:
         f.write(audio_bytes)
 
+    st.write(f"Saved audio file: {file_name}")  # Debug statement
     return file_name
 
 def transcribe_audio(file_path):
@@ -71,15 +72,16 @@ def main():
         audio_bytes = audio_recorder()
         if audio_bytes:
             st.audio(audio_bytes, format="audio/wav")
-            save_audio_file(audio_bytes, "mp3")
+            audio_file_name = save_audio_file(audio_bytes, "wav")
+            st.write(f"Recorded audio file saved as {audio_file_name}")
 
     # Upload Audio tab
     with tab2:
-        audio_file = st.file_uploader(
-            "Upload Audio", type=["mp3", "mp4", "wav", "m4a"])
+        audio_file = st.file_uploader("Upload Audio", type=["mp3", "mp4", "wav", "m4a"])
         if audio_file:
             file_extension = audio_file.type.split('/')[1]
-            save_audio_file(audio_file.read(), file_extension)
+            audio_file_name = save_audio_file(audio_file.read(), file_extension)
+            st.write(f"Uploaded audio file saved as {audio_file_name}")
 
     # Transcribe button action
     if st.button("Transcribe"):
