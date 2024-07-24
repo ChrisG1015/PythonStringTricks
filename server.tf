@@ -27,20 +27,21 @@ def transcribe_audio(audio_bytes):
     """
     files = {'file': audio_bytes}
     try:
-        response = requests.post(databricks_url, files=files)
-        response.raise_for_status()  # This will raise an HTTPError for bad responses
-        
-        # Debug statements to log request and response details
-        st.write(f"Request URL: {response.url}")
-        st.write(f"Request Headers: {response.request.headers}")
-        st.write(f"Request Body: {response.request.body}")
-        
-        st.write(f"Response Status Code: {response.status_code}")
-        st.write(f"Response Headers: {response.headers}")
-        st.write(f"Response Content: {response.content}")
+        with st.spinner('Transcribing audio...'):
+            response = requests.post(databricks_url, files=files)
+            response.raise_for_status()  # This will raise an HTTPError for bad responses
+            
+            # Debug statements to log request and response details
+            st.write(f"Request URL: {response.url}")
+            st.write(f"Request Headers: {response.request.headers}")
+            st.write(f"Request Body: {response.request.body}")
+            
+            st.write(f"Response Status Code: {response.status_code}")
+            st.write(f"Response Headers: {response.headers}")
+            st.write(f"Response Content: {response.content}")
 
-        transcript = response.json()
-        return transcript["text"]
+            transcript = response.json()
+            return transcript["text"]
     except requests.exceptions.RequestException as e:
         # Log the error and response content for debugging
         st.error(f"An error occurred: {e}")
@@ -94,6 +95,16 @@ def main():
         st.download_button("Download Transcript", transcript_text)
     elif not audio_bytes:
         st.warning("Please record or upload an audio file before transcribing.")
+
+    # Display connection logs in an expandable box
+    with st.expander("Connection Logs and Response Details"):
+        st.write(f"Request URL: {response.url}")
+        st.write(f"Request Headers: {response.request.headers}")
+        st.write(f"Request Body: {response.request.body}")
+        
+        st.write(f"Response Status Code: {response.status_code}")
+        st.write(f"Response Headers: {response.headers}")
+        st.write(f"Response Content: {response.content}")
 
 if __name__ == "__main__":
     # Set up the working directory
