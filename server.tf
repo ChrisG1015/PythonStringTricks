@@ -71,6 +71,8 @@ def main():
 
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
+    audio_bytes = None
+
     # Record Audio tab
     with tab1:
         audio_bytes = audio_recorder()
@@ -92,14 +94,21 @@ def main():
 
     # Transcribe button action
     if st.button("Transcribe"):
+        # Ensure the audio directory exists and contains files
+        if not os.path.exists(audio_dir):
+            st.error("Audio directory does not exist.")
+            return
+
+        audio_files = [f for f in os.listdir(audio_dir) if os.path.isfile(os.path.join(audio_dir, f)) and f.startswith("audio")]
+        if not audio_files:
+            st.error("No audio files found in the directory.")
+            return
+
         # Find the newest audio file
-        audio_file_path = max(
-            [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.startswith("audio")],
-            key=os.path.getctime,
-        )
+        audio_file_path = max(audio_files, key=lambda x: os.path.getctime(os.path.join(audio_dir, x)))
 
         # Transcribe the audio file
-        transcript_text = transcribe_audio(audio_file_path)
+        transcript_text = transcribe_audio(os.path.join(audio_dir, audio_file_path))
 
         # Display the transcript
         st.header("Transcript")
