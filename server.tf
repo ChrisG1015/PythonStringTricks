@@ -14,6 +14,9 @@ dotenv.load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 databricks_url = os.getenv("WHISPER_MODEL_DATABRICKS_URL")
 
+# Global variable to store the response
+global_response = None
+
 def transcribe(audio_file):
     transcript = openai.Audio.transcribe("whisper-1", audio_file)
     return transcript
@@ -23,31 +26,37 @@ def transcribe_audio(audio_bytes):
     Transcribe the audio bytes.
 
     :param audio_bytes: The audio data in bytes
-    :return: The transcribed text and the response object
+    :return: The transcribed text
     """
+    global global_response  # Use the global response variable
     files = {'file': audio_bytes}
     try:
         with st.spinner('Transcribing audio...'):
-            response = requests.post(databricks_url, files=files)
-            response.raise_for_status()  # This will raise an HTTPError for bad responses
+            global_response = requests.post(databricks_url, files=files)
+            global_response.raise_for_status()  # This will raise an HTTPError for bad responses
             
-            # Debug statements to log request and response details
-            st.write(f"Request URL: {response.url}")
-            st.write(f"Request Headers: {response.request.headers}")
-            st.write(f"Request Body: {response.request.body}")
-            
-            st.write(f"Response Status Code: {response.status_code}")
-            st.write(f"Response Headers: {response.headers}")
-            st.write(f"Response Content: {response.content}")
-
-            transcript = response.json()
-            return transcript["text"], response
+            transcript = global_response.json()
+            return transcript["text"]
     except requests.exceptions.RequestException as e:
         # Log the error and response content for debugging
         st.error(f"An error occurred: {e}")
-        if response is not None:
-            st.error(f"Response content: {response.text}")
-        return "An error occurred during transcription.", None
+        if global_response is not None:
+            st.error(f"Response content: {global_response.text}")
+        return "An error occurred during transcription."
+
+def display_logs():
+    """
+    Display the connection logs and response details.
+    """
+    if global_response:
+        with st.expander("Connection Logs and Response Details"):
+            st.write(f"Request URL: {global_response.url}")
+            st.write(f"Request Headers: {global_response.request.headers}")
+            st.write(f"Request Body: {global_response.request.body}")
+            
+            st.write(f"Response Status Code: {global_response.status_code}")
+            st.write(f"Response Headers: {global_response.headers}")
+            st.write(f"Response Content: {global_response.content}")
 
 def main():
     """
@@ -58,7 +67,6 @@ def main():
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
     audio_bytes = None
-    response = None
 
     # Record Audio tab
     with tab1:
@@ -82,7 +90,7 @@ def main():
         audio_file.name = "audio.wav"
 
         # Transcribe the audio file
-        transcript_text, response = transcribe_audio(audio_file)
+        transcript_text = transcribe_audio(audio_file)
 
         # Display the transcript
         st.header("Transcript")
@@ -97,16 +105,8 @@ def main():
     elif not audio_bytes:
         st.warning("Please record or upload an audio file before transcribing.")
 
-    # Display connection logs in an expandable box
-    if response:
-        with st.expander("Connection Logs and Response Details"):
-            st.write(f"Request URL: {response.url}")
-            st.write(f"Request Headers: {response.request.headers}")
-            st.write(f"Request Body: {response.request.body}")
-            
-            st.write(f"Response Status Code: {response.status_code}")
-            st.write(f"Response Headers: {response.headers}")
-            st.write(f"Response Content: {response.content}")
+    # Display connection logs
+    display_logs()
 
 if __name__ == "__main__":
     # Set up the working directory
