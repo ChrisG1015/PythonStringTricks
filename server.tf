@@ -8,10 +8,15 @@ import requests
 
 from audio_recorder_streamlit import audio_recorder
 
-# import API key from .env file
+# Import API key from .env file
 dotenv.load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 databricks_url = os.getenv("WHISPER_MODEL_DATABRICKS_URL")
+audio_dir = "audio_files"
+
+# Create the audio directory if it doesn't exist
+if not os.path.exists(audio_dir):
+    os.makedirs(audio_dir)
 
 def transcribe(audio_file):
     transcript = openai.Audio.transcribe("whisper-1", audio_file)
@@ -26,7 +31,7 @@ def save_audio_file(audio_bytes, file_extension):
     :return: The name of the saved audio file
     """
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_name = f"audio_{timestamp}.{file_extension}"
+    file_name = os.path.join(audio_dir, f"audio_{timestamp}.{file_extension}")
 
     with open(file_name, "wb") as f:
         f.write(audio_bytes)
@@ -79,13 +84,15 @@ def main():
     # Transcribe button action
     if st.button("Transcribe"):
         # Find the newest audio file
-        audio_file_path = max(
-            [f for f in os.listdir(".") if f.startswith("audio")],
-            key=os.path.getctime,
-        )
+        audio_files = [f for f in os.listdir(audio_dir) if f.startswith("audio")]
+        if not audio_files:
+            st.error("No audio files found.")
+            return
+
+        audio_file_path = max(audio_files, key=lambda x: os.path.getctime(os.path.join(audio_dir, x)))
 
         # Transcribe the audio file
-        transcript_text = transcribe_audio(audio_file_path)
+        transcript_text = transcribe_audio(os.path.join(audio_dir, audio_file_path))
 
         # Display the transcript
         st.header("Transcript")
