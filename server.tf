@@ -69,18 +69,15 @@ output "instance_public_ip" {
 }
 
 
-
-import pytest
-from cafe_speech_copilot.src.main import transcribe, save_audio_file, transcribe_audio
-
-def test_transcribe():
-    # This is just a placeholder. You should replace it with actual testing logic.
-    assert callable(transcribe)
-
-def test_save_audio_file():
-    # This is just a placeholder. You should replace it with actual testing logic.
-    assert callable(save_audio_file)
-
-def test_transcribe_audio():
-    # This is just a placeholder. You should replace it with actual testing logic.
-    assert callable(transcribe_audio)
+Traceback:
+File "/opt/app-root/lib64/python3.11/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 535, in _run_script
+    exec(code, module.__dict__)
+File "/app/src/main.py", line 107, in <module>
+    main()
+File "/app/src/main.py", line 87, in main
+    transcript_text = transcribe_audio(audio_file_path)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/app/src/main.py", line 49, in transcribe_audio
+    response.raise_for_status()
+File "/opt/app-root/lib64/python3.11/site-packages/requests/models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
