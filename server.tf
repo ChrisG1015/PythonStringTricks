@@ -4,24 +4,46 @@ import datetime
 import dotenv
 import streamlit as st
 import requests
-import json
 from audio_recorder_streamlit import audio_recorder
 
 # Import API key from .env file
 dotenv.load_dotenv()
 databricks_url = os.getenv("WHISPER_MODEL_DATABRICKS_URL")
-databricks_api_key = os.getenv("WHISPER_MODEL_DATABRICKS_API_KEY")
+databricks_api_key = os.getenv("WHISPER_MODEL_DATABRICKS_OAUTH_TOKEN")
 
 # Log window container
 log_container = st.empty()
 
+
+import os
+import requests
+import numpy as np
+import pandas as pd
+import json
+
+def create_tf_serving_json(data):
+    return {'inputs': {name: data[name].tolist() for name in data.keys()} if isinstance(data, dict) else data.tolist()}
+
+def score_model(dataset):
+    url = databricks_url
+    headers = {'Authorization': f'Bearer {os.environ.get("databricks_api_key")}', 'Content-Type': 'application/json'}
+    ds_dict = {'dataframe_split': dataset.to_dict(orient='split')} if isinstance(dataset, pd.DataFrame) else create_tf_serving_json(dataset)
+    data_json = json.dumps(ds_dict, allow_nan=True)
+    response = requests.request(method='POST', headers=headers, url=url, data=data_json)
+    if response.status_code != 200:
+        raise Exception(f'Request failed with status {response.status_code}, {response.text}')
+    return response.json()
+
+
+
 def log_message(message):
     """
     Append a message to the log window.
-    
+
     :param message: The message to append
     """
     log_container.write(message)
+
 
 def save_audio_file(audio_bytes, file_extension):
     """
@@ -39,6 +61,7 @@ def save_audio_file(audio_bytes, file_extension):
 
     return file_name
 
+
 def send_to_databricks(audio_file_path):
     """
     Send the audio file to the Databricks endpoint for transcription.
@@ -52,7 +75,7 @@ def send_to_databricks(audio_file_path):
     }
     with open(audio_file_path, "rb") as f:
         audio_data = f.read()
-    
+
     data = {
         "inputs": [
             {
@@ -65,11 +88,12 @@ def send_to_databricks(audio_file_path):
     response = requests.post(databricks_url, headers=headers, json=data)
     return response
 
+
 def main():
     """
     Main function to run the Whisper Transcription app.
     """
-    st.title("Whisper Transcription")
+    st.title("CAFE SPEECH COPILOT TRANSCIBER")
 
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
@@ -83,7 +107,8 @@ def main():
 
     # Upload Audio tab
     with tab2:
-        audio_file = st.file_uploader("Upload Audio", type=["mp3", "mp4", "wav", "m4a"])
+        audio_file = st.file_uploader(
+            "Upload Audio", type=["mp3", "mp4", "wav", "m4a"])
         if audio_file:
             file_extension = audio_file.type.split('/')[1]
             save_audio_file(audio_file.read(), file_extension)
@@ -104,22 +129,25 @@ def main():
             if response.status_code == 200:
                 log_message("Transcript successfully sent to Databricks.")
                 transcript_text = response.json().get("transcript", "")
-                
+
                 # Display the transcript
                 st.header("Transcript")
                 st.write(transcript_text)
-                
+
                 # Save the transcript to a text file
                 with open("transcript.txt", "w") as f:
                     f.write(transcript_text)
-                
+
                 # Provide a download button for the transcript
                 st.download_button("Download Transcript", transcript_text)
             else:
-                log_message(f"Failed to send transcript to Databricks: {response.status_code} - {response.text}")
+                log_message(
+                    f"Failed to send transcript to Databricks: {response.status_code} - {response.text}")
 
         except Exception as e:
-            log_message(f"Error during transcription or Databricks request: {e}")
+            log_message(
+                f"Error during transcription or Databricks request: {e}")
+
 
 if __name__ == "__main__":
     # Set up the working directory
