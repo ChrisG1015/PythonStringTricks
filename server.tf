@@ -85,4 +85,21 @@ def main():
         # Transcribe the audio file
         transcript_text = transcribe_audio(audio_file_path)
 
-        # 
+        # Display the transcript
+        st.header("Transcript")
+        st.write(transcript_text)
+
+        # Save the transcript to a text file
+        with open("transcript.txt", "w") as f:
+            f.write(transcript_text)
+
+        # Provide a download button for the transcript
+        st.download_button("Download Transcript", transcript_text)
+
+if __name__ == "__main__":
+    # Set up the working directory
+    working_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.append(working_dir)
+
+    # Run the main function
+    main()
