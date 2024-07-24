@@ -29,12 +29,23 @@ def transcribe_audio(audio_bytes):
     try:
         response = requests.post(databricks_url, files=files)
         response.raise_for_status()  # This will raise an HTTPError for bad responses
+        
+        # Debug statements to log request and response details
+        st.write(f"Request URL: {response.url}")
+        st.write(f"Request Headers: {response.request.headers}")
+        st.write(f"Request Body: {response.request.body}")
+        
+        st.write(f"Response Status Code: {response.status_code}")
+        st.write(f"Response Headers: {response.headers}")
+        st.write(f"Response Content: {response.content}")
+
         transcript = response.json()
         return transcript["text"]
     except requests.exceptions.RequestException as e:
         # Log the error and response content for debugging
         st.error(f"An error occurred: {e}")
-        st.error(f"Response content: {response.text}")
+        if response is not None:
+            st.error(f"Response content: {response.text}")
         return "An error occurred during transcription."
 
 def main():
