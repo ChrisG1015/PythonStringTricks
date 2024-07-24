@@ -99,6 +99,10 @@ def main():
     """
     st.title("CAFE SPEECH COPILOT TRANSCIBER")
 
+    # Print the API key and URL for verification
+    st.write("Databricks URL:", databricks_url)
+    st.write("Databricks API Key:", databricks_api_key[:6] + "..." + databricks_api_key[-4:])  # Partially mask the API key for security
+
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
     # Record Audio tab
@@ -117,8 +121,6 @@ def main():
             file_extension = audio_file.type.split('/')[1]
             save_audio_file(audio_file.read(), file_extension)
             log_message("Audio file uploaded and saved locally.")
-            databricks_api_key = os.getenv("WHISPER_API_KEY")
-            log_message(f"{databricks_api_key}")
 
     # Transcribe button action
     if st.button("Transcribe"):
@@ -146,9 +148,10 @@ def main():
             # Provide a download button for the transcript
             st.download_button("Download Transcript", transcript_text)
 
+        except requests.exceptions.RequestException as e:
+            log_message(f"Request error: {e}")
         except Exception as e:
-            log_message(
-                f"Error during transcription or Databricks request: {e}")
+            log_message(f"Error during transcription or Databricks request: {e}")
 
 
 if __name__ == "__main__":
@@ -158,6 +161,3 @@ if __name__ == "__main__":
 
     # Run the main function
     main()
-
-
-Error during transcription or Databricks request: HTTPSConnectionPool(host='.serving.cloud.databricks.com', port=443): Max retries exceeded with url: /2132323132/serving-endpoints/whisper_large_v3/invocations (Caused by SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:2427)')))
