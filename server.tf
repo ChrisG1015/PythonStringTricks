@@ -13,11 +13,9 @@ dotenv.load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 databricks_url = os.getenv("WHISPER_MODEL_DATABRICKS_URL")
 
-
 def transcribe(audio_file):
     transcript = openai.Audio.transcribe("whisper-1", audio_file)
     return transcript
-
 
 def save_audio_file(audio_bytes, file_extension):
     """
@@ -35,7 +33,6 @@ def save_audio_file(audio_bytes, file_extension):
 
     return file_name
 
-
 def transcribe_audio(file_path):
     """
     Transcribe the audio file at the specified path.
@@ -45,12 +42,16 @@ def transcribe_audio(file_path):
     """
     with open(file_path, "rb") as audio_file:
         files = {'file': audio_file}
-        response = requests.post(databricks_url, files=files)
-        response.raise_for_status()
-        transcript = response.json()
-
-    return transcript["text"]
-
+        try:
+            response = requests.post(databricks_url, files=files)
+            response.raise_for_status()  # This will raise an HTTPError for bad responses
+            transcript = response.json()
+            return transcript["text"]
+        except requests.exceptions.RequestException as e:
+            # Log the error and response content for debugging
+            st.error(f"An error occurred: {e}")
+            st.error(f"Response content: {response.text}")
+            return "An error occurred during transcription."
 
 def main():
     """
@@ -96,7 +97,6 @@ def main():
 
         # Provide a download button for the transcript
         st.download_button("Download Transcript", transcript_text)
-
 
 if __name__ == "__main__":
     # Set up the working directory
