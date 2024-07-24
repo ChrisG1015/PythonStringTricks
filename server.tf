@@ -4,37 +4,40 @@ import datetime
 import dotenv
 import streamlit as st
 import requests
+import pandas as pd
+import json
 from audio_recorder_streamlit import audio_recorder
 
 # Import API key from .env file
 dotenv.load_dotenv()
 databricks_url = os.getenv("WHISPER_MODEL_DATABRICKS_URL")
-databricks_api_key = os.getenv("WHISPER_MODEL_DATABRICKS_OAUTH_TOKEN")
+databricks_api_key = os.getenv("WHISPER_API_KEY")
 
 # Log window container
 log_container = st.empty()
 
-
-import os
-import requests
-import numpy as np
-import pandas as pd
-import json
-
 def create_tf_serving_json(data):
+    """
+    Create a TensorFlow Serving JSON payload from the data.
+
+    :param data: The data to be converted
+    :return: The JSON payload
+    """
     return {'inputs': {name: data[name].tolist() for name in data.keys()} if isinstance(data, dict) else data.tolist()}
 
-def score_model(dataset):
-    url = databricks_url
-    headers = {'Authorization': f'Bearer {os.environ.get("databricks_api_key")}', 'Content-Type': 'application/json'}
-    ds_dict = {'dataframe_split': dataset.to_dict(orient='split')} if isinstance(dataset, pd.DataFrame) else create_tf_serving_json(dataset)
-    data_json = json.dumps(ds_dict, allow_nan=True)
-    response = requests.request(method='POST', headers=headers, url=url, data=data_json)
+def score_model(data):
+    """
+    Send the data to the Databricks model endpoint for scoring.
+
+    :param data: The data to be sent
+    :return: The response from the Databricks API
+    """
+    headers = {'Authorization': f'Bearer {databricks_api_key}', 'Content-Type': 'application/json'}
+    data_json = json.dumps(data, allow_nan=True)
+    response = requests.post(databricks_url, headers=headers, data=data_json)
     if response.status_code != 200:
         raise Exception(f'Request failed with status {response.status_code}, {response.text}')
     return response.json()
-
-
 
 def log_message(message):
     """
@@ -43,7 +46,6 @@ def log_message(message):
     :param message: The message to append
     """
     log_container.write(message)
-
 
 def save_audio_file(audio_bytes, file_extension):
     """
@@ -61,7 +63,6 @@ def save_audio_file(audio_bytes, file_extension):
 
     return file_name
 
-
 def send_to_databricks(audio_file_path):
     """
     Send the audio file to the Databricks endpoint for transcription.
@@ -69,10 +70,6 @@ def send_to_databricks(audio_file_path):
     :param audio_file_path: The path of the audio file to send
     :return: The response from the Databricks API
     """
-    headers = {
-        "Authorization": f"Bearer {databricks_api_key}",
-        "Content-Type": "application/json"
-    }
     with open(audio_file_path, "rb") as f:
         audio_data = f.read()
 
@@ -85,9 +82,9 @@ def send_to_databricks(audio_file_path):
             }
         ]
     }
-    response = requests.post(databricks_url, headers=headers, json=data)
-    return response
 
+    response = score_model(data)
+    return response
 
 def main():
     """
@@ -126,28 +123,23 @@ def main():
 
             # Send the audio file to Databricks for transcription
             response = send_to_databricks(audio_file_path)
-            if response.status_code == 200:
-                log_message("Transcript successfully sent to Databricks.")
-                transcript_text = response.json().get("transcript", "")
+            log_message("Transcript successfully sent to Databricks.")
+            transcript_text = response.get("transcript", "")
 
-                # Display the transcript
-                st.header("Transcript")
-                st.write(transcript_text)
+            # Display the transcript
+            st.header("Transcript")
+            st.write(transcript_text)
 
-                # Save the transcript to a text file
-                with open("transcript.txt", "w") as f:
-                    f.write(transcript_text)
+            # Save the transcript to a text file
+            with open("transcript.txt", "w") as f:
+                f.write(transcript_text)
 
-                # Provide a download button for the transcript
-                st.download_button("Download Transcript", transcript_text)
-            else:
-                log_message(
-                    f"Failed to send transcript to Databricks: {response.status_code} - {response.text}")
+            # Provide a download button for the transcript
+            st.download_button("Download Transcript", transcript_text)
 
         except Exception as e:
             log_message(
                 f"Error during transcription or Databricks request: {e}")
-
 
 if __name__ == "__main__":
     # Set up the working directory
