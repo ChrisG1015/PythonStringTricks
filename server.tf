@@ -58,6 +58,22 @@ def display_logs():
             st.write(f"Response Headers: {global_response.headers}")
             st.write(f"Response Content: {global_response.content}")
 
+def save_audio_file(audio_bytes, file_extension="wav"):
+    """
+    Save audio bytes to a file with the specified extension.
+
+    :param audio_bytes: Audio data in bytes
+    :param file_extension: The extension of the output audio file
+    :return: The name of the saved audio file
+    """
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_name = f"audio_{timestamp}.{file_extension}"
+
+    with open(file_name, "wb") as f:
+        f.write(audio_bytes)
+
+    return file_name
+
 def main():
     """
     Main function to run the Whisper Transcription app.
@@ -67,6 +83,7 @@ def main():
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
     audio_bytes = None
+    audio_file_name = None
 
     # Record Audio tab
     with tab1:
@@ -74,6 +91,9 @@ def main():
         if audio_bytes:
             st.audio(audio_bytes, format="audio/wav")
             st.write("Audio recorded successfully.")
+            audio_file_name = save_audio_file(audio_bytes, "wav")
+            st.write(f"Saved audio file: {audio_file_name}")
+            st.write(f"Recording duration: {len(audio_bytes) / 16000:.2f} seconds")
 
     # Upload Audio tab
     with tab2:
@@ -82,6 +102,8 @@ def main():
             audio_bytes = audio_file.read()
             st.audio(audio_bytes, format="audio/wav")
             st.write("Audio uploaded successfully.")
+            audio_file_name = save_audio_file(audio_bytes, audio_file.type.split('/')[1])
+            st.write(f"Saved audio file: {audio_file_name}")
 
     # Transcribe button action
     if st.button("Transcribe") and audio_bytes:
