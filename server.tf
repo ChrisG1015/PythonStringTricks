@@ -15,6 +15,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 dotenv.load_dotenv()
 databricks_url = os.getenv("WHISPER_MODEL_DATABRICKS_URL")
 
+# Create a directory for storing audio files
+audio_dir = "audio_files"
+os.makedirs(audio_dir, exist_ok=True)
 
 def save_audio_file(audio_bytes, file_extension):
     """
@@ -25,13 +28,12 @@ def save_audio_file(audio_bytes, file_extension):
     :return: The name of the saved audio file
     """
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_name = f"audio_{timestamp}.{file_extension}"
+    file_name = f"{audio_dir}/audio_{timestamp}.{file_extension}"
 
     with open(file_name, "wb") as f:
         f.write(audio_bytes)
 
     return file_name
-
 
 def transcribe_audio(file_path):
     """
@@ -60,7 +62,6 @@ def transcribe_audio(file_path):
                 st.error(f"Response content: {response.text}")
                 logging.error(f"Response content: {response.text}")
             return "An error occurred during transcription."
-
 
 def main():
     """
@@ -93,7 +94,7 @@ def main():
     if st.button("Transcribe"):
         # Find the newest audio file
         audio_file_path = max(
-            [f for f in os.listdir(".") if f.startswith("audio")],
+            [os.path.join(audio_dir, f) for f in os.listdir(audio_dir) if f.startswith("audio")],
             key=os.path.getctime,
         )
 
@@ -114,7 +115,6 @@ def main():
         logging.info(f"Transcript available for download")
     elif not audio_bytes:
         st.warning("Please record or upload an audio file before transcribing.")
-
 
 if __name__ == "__main__":
     # Set up the working directory
