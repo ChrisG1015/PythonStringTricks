@@ -12,9 +12,12 @@ dotenv.load_dotenv()
 databricks_url = os.getenv("WHISPER_MODEL_DATABRICKS_URL")
 databricks_api_key = os.getenv("WHISPER_API_KEY")
 
+# Ensure the URL includes the necessary API path
+if not databricks_url.endswith('/api/2.0/serving-endpoints/your-endpoint-name/invocations'):
+    databricks_url = f"{databricks_url.rstrip('/')}/api/2.0/serving-endpoints/your-endpoint-name/invocations"
+
 # Log window container
 log_container = st.empty()
-
 
 def create_tf_serving_json(data):
     """
@@ -24,7 +27,6 @@ def create_tf_serving_json(data):
     :return: The JSON payload
     """
     return {'inputs': {name: data[name].tolist() for name in data.keys()} if isinstance(data, dict) else data.tolist()}
-
 
 def score_model(data):
     """
@@ -42,7 +44,6 @@ def score_model(data):
             f'Request failed with status {response.status_code}, {response.text}')
     return response.json()
 
-
 def log_message(message):
     """
     Append a message to the log window.
@@ -50,7 +51,6 @@ def log_message(message):
     :param message: The message to append
     """
     log_container.write(message)
-
 
 def save_audio_file(audio_bytes, file_extension):
     """
@@ -67,7 +67,6 @@ def save_audio_file(audio_bytes, file_extension):
         f.write(audio_bytes)
 
     return file_name
-
 
 def send_to_databricks(audio_file_path):
     """
@@ -92,7 +91,6 @@ def send_to_databricks(audio_file_path):
     response = score_model(data)
     return response
 
-
 def main():
     """
     Main function to run the Whisper Transcription app.
@@ -101,7 +99,7 @@ def main():
 
     # Print the API key and URL for verification
     st.write("Databricks URL:", databricks_url)
-    st.write("Databricks API Key:", databricks_api_key[:6] + "..." + databricks_api_key[-4:])  # Partially mask the API key for security
+    st.write("Databricks API Key:", databricks_api_key[:6] + '...' + databricks_api_key[-4:])  # Partially mask the API key for security
 
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
@@ -152,7 +150,6 @@ def main():
             log_message(f"Request error: {e}")
         except Exception as e:
             log_message(f"Error during transcription or Databricks request: {e}")
-
 
 if __name__ == "__main__":
     # Set up the working directory
