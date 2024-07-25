@@ -7,14 +7,34 @@ import requests
 import json
 from audio_recorder_streamlit import audio_recorder
 
-# Import API key from .env file
+# Import environment variables from .env file
 dotenv.load_dotenv()
-databricks_url = os.getenv("WHISPER_MODEL_DATABRICKS_URL")
-databricks_api_key = os.getenv("WHISPER_API_KEY")
+databricks_instance = os.getenv("DATABRICKS_INSTANCE")
+databricks_pat = os.getenv("DATABRICKS_PAT")
+endpoint_name = "your-endpoint-name"  # Replace with your actual endpoint name
+databricks_url = f"{databricks_instance}/api/2.0/serving-endpoints/{endpoint_name}/invocations"
 
-# Ensure the URL includes the necessary API path
-if not databricks_url.endswith('/api/2.0/serving-endpoints/your-endpoint-name/invocations'):
-    databricks_url = f"{databricks_url.rstrip('/')}/api/2.0/serving-endpoints/your-endpoint-name/invocations"
+# Function to get OAuth token using PAT
+def get_oauth_token(databricks_instance, databricks_pat):
+    token_url = f"{databricks_instance}/api/2.0/token-management/tokens"
+    headers = {
+        "Authorization": f"Bearer {databricks_pat}",
+        "Content-Type": "application/json"
+    }
+    response = requests.get(token_url, headers=headers)
+    if response.status_code == 200:
+        token_data = response.json()
+        # Assuming the response JSON contains the OAuth token in the "access_token" field
+        return token_data.get("access_token")
+    else:
+        raise Exception(f"Failed to get OAuth token: {response.status_code} - {response.text}")
+
+# Get the OAuth token
+try:
+    oauth_token = get_oauth_token(databricks_instance, databricks_pat)
+except Exception as e:
+    print(f"Error obtaining OAuth token: {e}")
+    sys.exit(1)
 
 # Log window container
 log_container = st.empty()
@@ -28,15 +48,18 @@ def create_tf_serving_json(data):
     """
     return {'inputs': {name: data[name].tolist() for name in data.keys()} if isinstance(data, dict) else data.tolist()}
 
-def score_model(data):
+def score_model(data, oauth_token):
     """
     Send the data to the Databricks model endpoint for scoring.
 
     :param data: The data to be sent
+    :param oauth_token: The OAuth token for authorization
     :return: The response from the Databricks API
     """
-    headers = {'Authorization': f'Bearer {databricks_api_key}',
-               'Content-Type': 'application/json'}
+    headers = {
+        'Authorization': f'Bearer {oauth_token}',
+        'Content-Type': 'application/json'
+    }
     data_json = json.dumps(data, allow_nan=True)
     response = requests.post(databricks_url, headers=headers, data=data_json)
     if response.status_code != 200:
@@ -68,11 +91,12 @@ def save_audio_file(audio_bytes, file_extension):
 
     return file_name
 
-def send_to_databricks(audio_file_path):
+def send_to_databricks(audio_file_path, oauth_token):
     """
     Send the audio file to the Databricks endpoint for transcription.
 
     :param audio_file_path: The path of the audio file to send
+    :param oauth_token: The OAuth token for authorization
     :return: The response from the Databricks API
     """
     with open(audio_file_path, "rb") as f:
@@ -88,7 +112,7 @@ def send_to_databricks(audio_file_path):
         ]
     }
 
-    response = score_model(data)
+    response = score_model(data, oauth_token)
     return response
 
 def main():
@@ -99,7 +123,7 @@ def main():
 
     # Print the API key and URL for verification
     st.write("Databricks URL:", databricks_url)
-    st.write("Databricks API Key:", databricks_api_key[:6] + '...' + databricks_api_key[-4:])  # Partially mask the API key for security
+    st.write("Databricks OAuth Token:", oauth_token[:6] + '...' + oauth_token[-4:])  # Partially mask the OAuth token for security
 
     tab1, tab2 = st.tabs(["Record Audio", "Upload Audio"])
 
@@ -131,7 +155,7 @@ def main():
             log_message(f"Found audio file: {audio_file_path}")
 
             # Send the audio file to Databricks for transcription
-            response = send_to_databricks(audio_file_path)
+            response = send_to_databricks(audio_file_path, oauth_token)
             log_message("Transcript successfully sent to Databricks.")
             transcript_text = response.get("transcript", "")
 
